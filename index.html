@@ -88,7 +88,7 @@
     <div class="wrap nav">
       <a class="brand" href="#top" aria-label="ÁrRadar főoldal"><span class="brand-mark">↘</span><span>ÁrRadar</span></a>
       <nav class="navlinks" aria-label="Fő navigáció"><a href="#termekek">Termékek</a><a href="#modszer">Hogyan működik?</a><a href="#figyelmeztetes">A mintáról</a></nav>
-      <span class="demo-top">PROTOTÍPUS · MINTAADATOK</span>
+      <span class="demo-top" id="headerStatus">PROTOTÍPUS · MINTAADATOK</span>
     </div>
   </header>
 
@@ -124,6 +124,8 @@
       </div>
     </section>
 
+    <div id="dbStatus" class="notice" role="status" style="margin-top:0">Az adatbázis-kapcsolat még nincs beállítva. A jelenlegi termékek helyi tesztadatok.</div>
+
     <section id="termekek">
       <div class="section-head">
         <div><h2>Figyelemre méltó ármozgások</h2><p>A példaadatokkal kipróbálhatod a keresést és a szűrést.</p></div>
@@ -141,14 +143,27 @@
       <div class="why-item"><div class="num">03 / ÁTLÁTHATÓSÁG</div><h3>Megmutatjuk, miért kapott jelzést</h3><p>Nem ígérünk biztos „legjobb vételt” kevés adatból. A látogató lássa a számokat, a számítás alapját és az adat frissességét.</p></div>
     </section>
 
-    <div id="figyelmeztetes" class="notice"><strong>Fontos: ez még csak működő látvány- és funkcióprototípus.</strong> Az itt látható termékek, árak, boltok és ár-előzmények kitalált mintaadatok, nem élő ajánlatok. A „jó akciójelölt” címke a demonstráció számítása, nem tényleges vásárlási tanács. Éles indulás előtt jogszerűen használható termékadat-forrásra és valódi árnaplóra lesz szükség.</div>
+    <div id="figyelmeztetes" class="notice"><strong>Fontos: ez még csak működő látvány- és funkcióprototípus.</strong> Az adatbázis-kapcsolat teszteléséhez használt teszttermék és árelőzmény kitalált adat, nem élő ajánlat. Valódi árakat később engedélyezett termékadat-forrásból kapcsolunk be. A „jó akciójelölt” címke a demonstráció számítása, nem tényleges vásárlási tanács. Éles indulás előtt jogszerűen használható termékadat-forrásra és valódi árnaplóra lesz szükség.</div>
   </main>
 
   <footer><div class="wrap"><strong>ÁrRadar – munkanév</strong><br />Első prototípus · magyar nyelvű felület · demoadatokkal. A végleges név, adatforrások, adatkezelési tájékoztató és kereskedelmi feltételek később kerülnek kialakításra.</div></footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // IDE írd be a Supabase Project URL-t és a Publishable key-t.
+    // KIZÁRÓLAG a sb_publishable_ kezdetű nyilvános kulcs használható itt.
+    // Secret key / service_role kulcsot soha ne tegyél böngészőben futó kódba.
+    const SUPABASE_URL = "https://yzuhupietkdmqqakcser.supabase.co
+
+
+";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_YOUZiNc_pKeiHF0CYVQ4FQ_qJRYyqCp";
+    let databaseMode = false;
+    const dbStatus = document.getElementById('dbStatus');
+    const headerStatus = document.getElementById('headerStatus');
+
     // KIZÁRÓLAG DEMÓADATOK. Ezeket később engedélyezett, friss adatforrás váltja fel.
-    const products = [
+    let products = [
       { id: 1, name: 'Vezeték nélküli zajszűrős fejhallgató', category: 'Elektronika', price: 42990, avg30: 54990, low30: 45990, days: 30, store: 'MintaBolt', updated: 'ma 08:00', description: 'A mintaár 21,8%-kal alacsonyabb a 30 napos átlagnál.' },
       { id: 2, name: '1 TB-os NVMe SSD', category: 'Számítástechnika', price: 21990, avg30: 24990, low30: 22990, days: 28, store: 'PéldaShop', updated: 'ma 08:00', description: 'A mintaár az átlag alatt van, és új 30 napos minimumot mutat.' },
       { id: 3, name: 'Forrólevegős sütő, 5 liter', category: 'Otthon', price: 31990, avg30: 34990, low30: 30990, days: 30, store: 'MintaBolt', updated: 'tegnap 20:00', description: 'Csak kis eltérés látszik az átlaghoz képest; önmagában nem erős akciójel.' },
@@ -163,7 +178,8 @@
     const discount = p => Math.round((1 - p.price / p.avg30) * 100);
     // Demó szabály: legalább 10% az átlagár alatt és legalább 14 napnyi előzmény.
     // Valódi bevezetésnél ezt tesztelt szabályra, ár-idősorra és adatminőségi ellenőrzésre kell cserélni.
-    const isDealCandidate = p => discount(p) >= 10 && p.days >= 14;
+    const isDealCandidate = p => !p.databaseData && discount(p) >= 10 && p.days >= 14;
+    const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const grid = document.getElementById('productsGrid');
     const empty = document.getElementById('empty');
 
@@ -177,29 +193,32 @@
         return matchesText && matchesCategory && (!onlyDeals || isDealCandidate(p));
       }).sort((a,b) => discount(b) - discount(a));
       grid.querySelectorAll('.product').forEach(el => el.remove());
-      document.getElementById('resultsCount').textContent = `${list.length} minta-termék · csökkenő átlagár-különbség szerint rendezve`;
+      document.getElementById('resultsCount').textContent = databaseMode
+        ? `${list.length} adatbázisból betöltött termék · csökkenő átlagár-különbség szerint rendezve`
+        : `${list.length} minta-termék · csökkenő átlagár-különbség szerint rendezve`;
       empty.style.display = list.length ? 'none' : 'block';
       list.forEach(p => {
         const d = discount(p);
         const good = isDealCandidate(p);
-        const currentRatio = Math.min(100, Math.round((p.price / p.avg30) * 100));
+        const currentRatio = Math.min(100, Math.round((p.price / (p.avg30 || p.price)) * 100));
         const card = document.createElement('article');
         card.className = 'product';
+        const badgeText = p.databaseData ? 'ADATBÁZIS-TESZT' : (good ? `${d}% az átlag alatt` : 'Nincs erős jelzés');
         card.innerHTML = `
-          <div class="card-top"><span class="category">${p.category}</span><span class="badge ${good ? 'good' : ''}">${good ? `${d}% az átlag alatt` : 'Nincs erős jelzés'}</span></div>
-          <h3>${p.name}</h3>
+          <div class="card-top"><span class="category">${escapeHTML(p.category)}</span><span class="badge ${good ? 'good' : ''}">${escapeHTML(badgeText)}</span></div>
+          <h3>${escapeHTML(p.name)}</h3>
           <div class="price-row"><span class="price">${money(p.price)}</span><span class="compare">${money(p.avg30)}</span></div>
           <div class="history">
             <div class="history-line"><span>30 napos átlagár (minta)</span><strong>${money(p.avg30)}</strong></div>
             <div class="history-line"><span>Korábbi 30 napos minimum (minta)</span><strong>${money(p.low30)}</strong></div>
             <div class="meter" aria-label="Jelenlegi ár az átlag százalékában"><span style="width:${currentRatio}%"></span></div>
           </div>
-          <div class="reason">${p.description}</div>
-          <div class="history-line" style="margin-top:13px;margin-bottom:0"><span>Adatfrissítés (minta)</span><strong>${p.updated}</strong></div>
-          <button class="btn" type="button" aria-label="${p.name} magyarázata" data-id="${p.id}">Miért ezt jelzi?</button>`;
+          <div class="reason">${escapeHTML(p.description)}</div>
+          <div class="history-line" style="margin-top:13px;margin-bottom:0"><span>${p.databaseData ? 'Utolsó rögzítés' : 'Adatfrissítés (minta)'}</span><strong>${escapeHTML(p.updated)}</strong></div>
+          <button class="btn" type="button" aria-label="${escapeHTML(p.name)} magyarázata" data-id="${escapeHTML(p.id)}">Miért ezt jelzi?</button>`;
         grid.insertBefore(card, empty);
         card.querySelector('button').addEventListener('click', () => {
-          alert(`${p.name}\n\nJelenlegi mintaár: ${money(p.price)}\n30 napos mintaátlag: ${money(p.avg30)}\nEltérés: ${d}%\nÁrelőzmény: ${p.days} nap\n\n${good ? 'A demó szabály szerint jó akciójelölt.' : 'A demó szabály szerint nincs elég erős akciójel.'}\n\nEz nem élő kereskedői ajánlat.`);
+          alert(`${p.name}\n\nJelenlegi ${p.databaseData ? 'adatbázisban rögzített tesztár' : 'mintaár'}: ${money(p.price)}\nKorábbi adatok átlaga: ${money(p.avg30)}\nEltérés az átlaghoz képest: ${d}%\nÁrelőzmény: ${p.days} nap\n\n${p.databaseData ? p.description + '\n\nEz jelenleg tesztadat, nem valódi bolti ajánlat.' : (good ? 'A demó szabály szerint jó akciójelölt.' : 'A demó szabály szerint nincs elég erős akciójel.') + '\n\nEz nem élő kereskedői ajánlat.'}`);
         });
       });
     }
@@ -208,6 +227,86 @@
     document.getElementById('category').addEventListener('change', render);
     document.getElementById('onlyDeals').addEventListener('change', render);
     render();
+
+    async function loadProductsFromSupabase() {
+      const url = SUPABASE_URL.trim();
+      const key = SUPABASE_PUBLISHABLE_KEY.trim();
+      if (!url.startsWith('https://') || url.includes('IDE_MASOLD') || !key.startsWith('sb_publishable_') || key.includes('IDE_MASOLD')) {
+        dbStatus.textContent = 'Még nincs megadva a Supabase Project URL és a sb_publishable_ kezdetű Publishable key. Jelenleg csak helyi tesztadatokat látsz.';
+        return;
+      }
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        dbStatus.textContent = 'Nem sikerült betölteni a Supabase-könyvtárat. Ellenőrizd az internetkapcsolatot, majd frissítsd az oldalt.';
+        return;
+      }
+      try {
+        const client = window.supabase.createClient(url, key);
+        const { data: productRows, error: productError } = await client
+          .from('products')
+          .select('id,name,category,brand,model,product_url,image_url,created_at')
+          .order('name', { ascending: true });
+        if (productError) throw productError;
+        const { data: priceRows, error: priceError } = await client
+          .from('price_history')
+          .select('id,product_id,store_name,price_huf,offer_url,observed_at')
+          .order('observed_at', { ascending: true })
+          .limit(5000);
+        if (priceError) throw priceError;
+
+        const mapped = (productRows || []).map(product => {
+          const rows = (priceRows || [])
+            .filter(row => row.product_id === product.id)
+            .sort((a,b) => new Date(a.observed_at) - new Date(b.observed_at));
+          if (!rows.length) return null;
+          // Egy terméknél a legfrissebb bolti ajánlatot választjuk. Az összehasonlító alapot
+          // ugyanannak a boltnak a korábbi áraiból képezzük, nem más boltok áraiból.
+          const grouped = new Map();
+          rows.forEach(row => {
+            const name = row.store_name || 'Ismeretlen bolt';
+            if (!grouped.has(name)) grouped.set(name, []);
+            grouped.get(name).push(row);
+          });
+          const latestOffers = [...grouped.entries()].map(([storeName, history]) => ({ storeName, history, latest: history[history.length - 1] }));
+          latestOffers.sort((a,b) => Number(a.latest.price_huf) - Number(b.latest.price_huf));
+          const chosen = latestOffers[0];
+          const latest = chosen.latest;
+          const cutoff = new Date(latest.observed_at).getTime() - 30 * 24 * 60 * 60 * 1000;
+          const previous = chosen.history.filter(row => new Date(row.observed_at).getTime() < new Date(latest.observed_at).getTime() && new Date(row.observed_at).getTime() >= cutoff);
+          const currentPrice = Number(latest.price_huf);
+          const baselinePrices = previous.map(row => Number(row.price_huf)).filter(Number.isFinite);
+          const avg30 = baselinePrices.length ? baselinePrices.reduce((a,b) => a+b, 0) / baselinePrices.length : currentPrice;
+          const low30 = baselinePrices.length ? Math.min(...baselinePrices) : currentPrice;
+          const firstTime = chosen.history.length ? new Date(chosen.history[0].observed_at).getTime() : new Date(latest.observed_at).getTime();
+          const lastTime = new Date(latest.observed_at).getTime();
+          const days = Math.max(0, Math.floor((lastTime - firstTime) / (24 * 60 * 60 * 1000)));
+          return {
+            id: product.id,
+            name: product.name,
+            category: product.category || 'Egyéb',
+            price: currentPrice,
+            avg30,
+            low30,
+            days,
+            store: chosen.storeName,
+            updated: new Date(latest.observed_at).toLocaleString('hu-HU'),
+            description: `Az adatbázisban ${chosen.history.length} árbejegyzés található ennél a boltnál. Ez a kapcsolatpróba; a jelenlegi Teszt SSD adatai kitalált mintaadatok, nem élő ajánlatok.`,
+            databaseData: true,
+            historyPoints: chosen.history.length,
+            productUrl: latest.offer_url || product.product_url || ''
+          };
+        }).filter(Boolean);
+
+        products = mapped;
+        databaseMode = true;
+        headerStatus.textContent = 'ADATBÁZIS KAPCSOLAT OK';
+        dbStatus.textContent = `Sikeres kapcsolat! ${mapped.length} termék betöltve a Supabase-adatbázisból. A mostani árak továbbra is tesztadatok; valódi akciót csak valódi, engedélyezett adatforrásból szabad jelezni.`;
+        render();
+      } catch (error) {
+        console.error('Supabase kapcsolat hiba:', error);
+        dbStatus.textContent = `Az adatbázishoz nem sikerült kapcsolódni: ${error.message || error}. A tesztoldal továbbra is működik. Ellenőrizd az URL-t, a Publishable key-t és az adatbázis olvasási jogosultságait.`;
+      }
+    }
+    loadProductsFromSupabase();
   </script>
 </body>
 </html>
