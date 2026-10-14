@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ÁrRadar – ár-összehasonlító oldal prototípusa, amely az ár-előzmények alapján segít felismerni a valódi leárazásokat." />
+  <title>ÁrRadar – Ne csak az akciót nézd. Az árelőzményt is.</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2d;
+      --panel2: #18233a;
+      --text: #f4f7fb;
+      --muted: #aab6cc;
+      --line: rgba(255,255,255,.10);
+      --green: #7de0b2;
+      --green-dark: #163f35;
+      --yellow: #ffd27a;
+      --blue: #9dc4ff;
+      --shadow: 0 18px 45px rgba(0,0,0,.20);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at 85% 0%, #1d3154 0, transparent 32%), var(--bg); color: var(--text); }
+    a { color: inherit; }
+    .wrap { width: min(1140px, calc(100% - 36px)); margin: 0 auto; }
+    header { border-bottom: 1px solid var(--line); background: rgba(11,16,32,.75); backdrop-filter: blur(10px); }
+    .nav { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 850; letter-spacing: -.04em; font-size: 1.35rem; text-decoration: none; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px; background: linear-gradient(145deg, #92f0c4, #4eb58a); color: #09231c; font-size: 1.3rem; box-shadow: 0 7px 24px rgba(91,222,167,.22); }
+    .navlinks { display: flex; gap: 24px; color: var(--muted); font-size: .93rem; }
+    .navlinks a { text-decoration: none; }
+    .navlinks a:hover { color: var(--text); }
+    .demo-top { font-size: .75rem; color: var(--yellow); border: 1px solid rgba(255,210,122,.35); background: rgba(255,210,122,.08); border-radius: 999px; padding: 8px 12px; white-space: nowrap; }
+    .hero { padding: 68px 0 40px; display: grid; grid-template-columns: 1.35fr .65fr; gap: 42px; align-items: center; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .15em; color: var(--green); font-size: .74rem; font-weight: 800; }
+    h1 { font-size: clamp(2.4rem, 5.2vw, 4.5rem); line-height: .99; letter-spacing: -.065em; margin: 16px 0 20px; max-width: 760px; }
+    h1 em { color: var(--green); font-style: normal; }
+    .hero p { color: var(--muted); font-size: 1.08rem; line-height: 1.7; max-width: 660px; margin: 0; }
+    .hero-card { padding: 24px; background: linear-gradient(160deg, rgba(125,224,178,.12), rgba(24,35,58,.85)); border: 1px solid rgba(125,224,178,.24); border-radius: 24px; box-shadow: var(--shadow); }
+    .hero-card .big { font-size: 2.55rem; font-weight: 850; letter-spacing: -.06em; margin: 8px 0; }
+    .hero-card p { font-size: .9rem; line-height: 1.55; }
+    .mini-line { height: 58px; margin: 16px 0 10px; display: flex; align-items: end; gap: 7px; }
+    .mini-line span { display: block; flex: 1; border-radius: 5px 5px 2px 2px; background: linear-gradient(to top, #42ac83, #9ce9c6); opacity: .9; }
+    .mini-line span:nth-child(1){height:75%}.mini-line span:nth-child(2){height:65%}.mini-line span:nth-child(3){height:72%}.mini-line span:nth-child(4){height:59%}.mini-line span:nth-child(5){height:48%}.mini-line span:nth-child(6){height:44%}.mini-line span:nth-child(7){height:25%}
+    .search-area { margin: 6px 0 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; grid-template-columns: 1fr 220px auto; gap: 10px; }
+    input, select { width: 100%; border: 1px solid var(--line); background: #0c1426; color: var(--text); border-radius: 12px; padding: 14px 15px; font: inherit; outline: none; }
+    input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(125,224,178,.1); }
+    .btn { border: 0; border-radius: 12px; padding: 0 20px; background: var(--green); color: #09231c; font-weight: 850; font: inherit; cursor: pointer; }
+    .btn:hover { filter: brightness(1.05); }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 32px 0 18px; }
+    h2 { margin: 0; font-size: 1.65rem; letter-spacing: -.04em; }
+    .section-head p { margin: 7px 0 0; color: var(--muted); font-size: .92rem; }
+    .toggle { display: inline-flex; align-items: center; gap: 9px; color: var(--muted); font-size: .88rem; cursor: pointer; white-space: nowrap; }
+    .toggle input { width: 17px; height: 17px; accent-color: var(--green); }
+    .results-count { color: var(--muted); font-size: .85rem; margin: 0 0 14px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .product { border: 1px solid var(--line); background: linear-gradient(160deg, rgba(24,35,58,.92), rgba(17,25,43,.96)); border-radius: 19px; padding: 19px; min-width: 0; box-shadow: 0 10px 24px rgba(0,0,0,.12); transition: transform .18s, border-color .18s; }
+    .product:hover { transform: translateY(-3px); border-color: rgba(125,224,178,.35); }
+    .card-top { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+    .category { text-transform: uppercase; font-size: .68rem; color: var(--muted); letter-spacing: .12em; font-weight: 800; }
+    .badge { font-size: .7rem; font-weight: 800; border-radius: 999px; padding: 6px 9px; background: rgba(255,210,122,.1); color: var(--yellow); border: 1px solid rgba(255,210,122,.2); white-space: nowrap; }
+    .badge.good { color: var(--green); background: rgba(125,224,178,.1); border-color: rgba(125,224,178,.24); }
+    .product h3 { font-size: 1.08rem; line-height: 1.35; min-height: 46px; margin: 15px 0 14px; letter-spacing: -.02em; }
+    .price-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+    .price { font-size: 1.75rem; letter-spacing: -.055em; font-weight: 850; }
+    .compare { color: var(--muted); font-size: .8rem; text-decoration: line-through; }
+    .history { margin: 17px 0 13px; padding: 12px; border-radius: 12px; background: rgba(6,11,23,.45); }
+    .history-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .78rem; margin-bottom: 8px; }
+    .history-line:last-child { margin-bottom: 0; }
+    .history-line span:first-child { color: var(--muted); }
+    .meter { height: 5px; width: 100%; background: #283650; border-radius: 9px; overflow: hidden; margin-top: 9px; }
+    .meter span { display: block; height: 100%; background: var(--green); border-radius: 9px; }
+    .reason { color: var(--muted); font-size: .82rem; line-height: 1.5; min-height: 38px; }
+    .product .btn { display: block; width: 100%; padding: 12px 14px; margin-top: 15px; font-size: .88rem; text-align: center; }
+    .why { margin: 44px 0; border: 1px solid var(--line); border-radius: 22px; background: rgba(18,26,45,.78); padding: 28px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 23px; }
+    .why-item .num { color: var(--green); font-weight: 900; font-size: .78rem; letter-spacing: .12em; }
+    .why-item h3 { margin: 10px 0 8px; font-size: 1rem; }
+    .why-item p { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.65; }
+    .notice { border: 1px solid rgba(255,210,122,.28); background: rgba(255,210,122,.065); color: #ffe7b6; padding: 15px 17px; line-height: 1.55; border-radius: 14px; font-size: .87rem; margin: 26px 0 40px; }
+    footer { border-top: 1px solid var(--line); padding: 24px 0 34px; color: var(--muted); font-size: .8rem; line-height: 1.7; }
+    .empty { display:none; text-align:center; padding:45px 10px; color:var(--muted); grid-column:1/-1; }
+    @media(max-width: 900px) { .hero{grid-template-columns:1fr; padding-top:48px}.hero-card{max-width:520px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.why{grid-template-columns:1fr}.search-area{grid-template-columns:1fr 180px}.search-area .btn{grid-column:1/-1;padding:13px} }
+    @media(max-width: 580px) { .wrap{width:min(100% - 24px,1140px)}.nav{min-height:66px}.navlinks{display:none}.demo-top{font-size:.65rem;padding:7px 9px}.hero{padding-top:38px}.search-area{grid-template-columns:1fr;padding:12px}.grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.product h3{min-height:unset}.why{padding:21px}.hero-card .big{font-size:2.2rem} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="ÁrRadar főoldal"><span class="brand-mark">↘</span><span>ÁrRadar</span></a>
+      <nav class="navlinks" aria-label="Fő navigáció"><a href="#termekek">Termékek</a><a href="#modszer">Hogyan működik?</a><a href="#figyelmeztetes">A mintáról</a></nav>
+      <span class="demo-top">PROTOTÍPUS · MINTAADATOK</span>
+    </div>
+  </header>
+
+  <main id="top" class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Okosabb vásárlás, tisztább árak</div>
+        <h1>Ne csak az akciót nézd. <em>Az árelőzményt is.</em></h1>
+        <p>Az ÁrRadar célja, hogy megmutassa, mikor olcsóbb tényleg egy termék — és mikor csak jól hangzik a piros akciós címke. Később valódi, rendszeresen frissített ár-adatokkal működik majd.</p>
+      </div>
+      <aside class="hero-card" aria-label="A szolgáltatás rövid bemutatása">
+        <div class="eyebrow">Az alapelvünk</div>
+        <div class="big">Ár ≠ akció</div>
+        <p>Nem a leárazás feliratát vizsgáljuk, hanem a jelenlegi árat vetjük össze a korábbi árakkal.</p>
+        <div class="mini-line" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <p style="font-size:.75rem;margin:0">Illusztráció: egy termék árának lehetséges alakulása.</p>
+      </aside>
+    </section>
+
+    <section aria-label="Termékkereső">
+      <div class="search-area">
+        <input id="search" type="search" placeholder="Keress termékre, például: fejhallgató…" aria-label="Termék keresése" />
+        <select id="category" aria-label="Kategória szűrése">
+          <option value="all">Minden kategória</option>
+          <option value="Elektronika">Elektronika</option>
+          <option value="Számítástechnika">Számítástechnika</option>
+          <option value="Otthon">Otthon</option>
+          <option value="Sport">Sport</option>
+          <option value="Játék">Játék</option>
+          <option value="Szépségápolás">Szépségápolás</option>
+        </select>
+        <button class="btn" id="searchButton">Termékek keresése</button>
+      </div>
+    </section>
+
+    <section id="termekek">
+      <div class="section-head">
+        <div><h2>Figyelemre méltó ármozgások</h2><p>A példaadatokkal kipróbálhatod a keresést és a szűrést.</p></div>
+        <label class="toggle"><input type="checkbox" id="onlyDeals" /> Csak a jó akciójelöltek</label>
+      </div>
+      <div class="results-count" id="resultsCount" aria-live="polite"></div>
+      <div class="grid" id="productsGrid">
+        <div class="empty" id="empty">Nincs találat. Próbálj másik keresést vagy kategóriát.</div>
+      </div>
+    </section>
+
+    <section id="modszer" class="why" aria-label="Hogyan működik az akciójelző">
+      <div class="why-item"><div class="num">01 / ÁRFIGYELÉS</div><h3>Elmentjük a korábbi árakat</h3><p>A rendszer időbélyeggel eltárolja, mennyiért kínálták a terméket. Egyetlen pillanatkép még nem elég a következtetéshez.</p></div>
+      <div class="why-item"><div class="num">02 / ELLENŐRZÉS</div><h3>Összehasonlítjuk az előzményekkel</h3><p>A jelenlegi árat a korábbi időszak jellemző árához viszonyítjuk, és figyelembe vesszük, mennyi adat gyűlt össze.</p></div>
+      <div class="why-item"><div class="num">03 / ÁTLÁTHATÓSÁG</div><h3>Megmutatjuk, miért kapott jelzést</h3><p>Nem ígérünk biztos „legjobb vételt” kevés adatból. A látogató lássa a számokat, a számítás alapját és az adat frissességét.</p></div>
+    </section>
+
+    <div id="figyelmeztetes" class="notice"><strong>Fontos: ez még csak működő látvány- és funkcióprototípus.</strong> Az itt látható termékek, árak, boltok és ár-előzmények kitalált mintaadatok, nem élő ajánlatok. A „jó akciójelölt” címke a demonstráció számítása, nem tényleges vásárlási tanács. Éles indulás előtt jogszerűen használható termékadat-forrásra és valódi árnaplóra lesz szükség.</div>
+  </main>
+
+  <footer><div class="wrap"><strong>ÁrRadar – munkanév</strong><br />Első prototípus · magyar nyelvű felület · demoadatokkal. A végleges név, adatforrások, adatkezelési tájékoztató és kereskedelmi feltételek később kerülnek kialakításra.</div></footer>
+
+  <script>
+    // KIZÁRÓLAG DEMÓADATOK. Ezeket később engedélyezett, friss adatforrás váltja fel.
+    const products = [
+      { id: 1, name: 'Vezeték nélküli zajszűrős fejhallgató', category: 'Elektronika', price: 42990, avg30: 54990, low30: 45990, days: 30, store: 'MintaBolt', updated: 'ma 08:00', description: 'A mintaár 21,8%-kal alacsonyabb a 30 napos átlagnál.' },
+      { id: 2, name: '1 TB-os NVMe SSD', category: 'Számítástechnika', price: 21990, avg30: 24990, low30: 22990, days: 28, store: 'PéldaShop', updated: 'ma 08:00', description: 'A mintaár az átlag alatt van, és új 30 napos minimumot mutat.' },
+      { id: 3, name: 'Forrólevegős sütő, 5 liter', category: 'Otthon', price: 31990, avg30: 34990, low30: 30990, days: 30, store: 'MintaBolt', updated: 'tegnap 20:00', description: 'Csak kis eltérés látszik az átlaghoz képest; önmagában nem erős akciójel.' },
+      { id: 4, name: 'Futócipő, semleges talpkialakítás', category: 'Sport', price: 27990, avg30: 37990, low30: 31990, days: 22, store: 'PéldaShop', updated: 'ma 07:30', description: 'Jelentős átlagár alatti eltérés látszik a mintában.' },
+      { id: 5, name: 'Építőjáték készlet, 800+ elem', category: 'Játék', price: 18990, avg30: 19990, low30: 18490, days: 30, store: 'TesztÁruház', updated: 'ma 06:00', description: 'Az ár közel van a korábbi szinthez, ezért nem kap erős akciójelzést.' },
+      { id: 6, name: 'Arctisztító készülék', category: 'Szépségápolás', price: 14990, avg30: 21990, low30: 17990, days: 18, store: 'MintaBolt', updated: 'ma 09:00', description: 'A kevésbé hosszú ár-előzmény miatt a jelzést óvatosan kell kezelni.' },
+      { id: 7, name: '27 hüvelykes QHD monitor', category: 'Számítástechnika', price: 69990, avg30: 79990, low30: 74990, days: 30, store: 'TesztÁruház', updated: 'ma 08:00', description: 'A mintaár több mint 10%-kal az átlag alatt van.' },
+      { id: 8, name: 'Bluetooth hangszóró', category: 'Elektronika', price: 12990, avg30: 13990, low30: 11990, days: 30, store: 'PéldaShop', updated: 'tegnap 18:00', description: 'Az ár az átlag alatt van, de nem éri el a demó akcióküszöböt.' },
+      { id: 9, name: 'Kávéfőző, automata tejhabosítóval', category: 'Otthon', price: 84990, avg30: 109990, low30: 94990, days: 30, store: 'MintaBolt', updated: 'ma 08:00', description: 'A mintaár jelentősen alacsonyabb a 30 napos átlagnál.' }
+    ];
+    const money = n => new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF', maximumFractionDigits: 0 }).format(n).replace(/\u00a0/g, ' ');
+    const discount = p => Math.round((1 - p.price / p.avg30) * 100);
+    // Demó szabály: legalább 10% az átlagár alatt és legalább 14 napnyi előzmény.
+    // Valódi bevezetésnél ezt tesztelt szabályra, ár-idősorra és adatminőségi ellenőrzésre kell cserélni.
+    const isDealCandidate = p => discount(p) >= 10 && p.days >= 14;
+    const grid = document.getElementById('productsGrid');
+    const empty = document.getElementById('empty');
+
+    function render() {
+      const query = document.getElementById('search').value.trim().toLocaleLowerCase('hu-HU');
+      const category = document.getElementById('category').value;
+      const onlyDeals = document.getElementById('onlyDeals').checked;
+      const list = products.filter(p => {
+        const matchesText = (p.name + ' ' + p.category + ' ' + p.store).toLocaleLowerCase('hu-HU').includes(query);
+        const matchesCategory = category === 'all' || p.category === category;
+        return matchesText && matchesCategory && (!onlyDeals || isDealCandidate(p));
+      }).sort((a,b) => discount(b) - discount(a));
+      grid.querySelectorAll('.product').forEach(el => el.remove());
+      document.getElementById('resultsCount').textContent = `${list.length} minta-termék · csökkenő átlagár-különbség szerint rendezve`;
+      empty.style.display = list.length ? 'none' : 'block';
+      list.forEach(p => {
+        const d = discount(p);
+        const good = isDealCandidate(p);
+        const currentRatio = Math.min(100, Math.round((p.price / p.avg30) * 100));
+        const card = document.createElement('article');
+        card.className = 'product';
+        card.innerHTML = `
+          <div class="card-top"><span class="category">${p.category}</span><span class="badge ${good ? 'good' : ''}">${good ? `${d}% az átlag alatt` : 'Nincs erős jelzés'}</span></div>
+          <h3>${p.name}</h3>
+          <div class="price-row"><span class="price">${money(p.price)}</span><span class="compare">${money(p.avg30)}</span></div>
+          <div class="history">
+            <div class="history-line"><span>30 napos átlagár (minta)</span><strong>${money(p.avg30)}</strong></div>
+            <div class="history-line"><span>Korábbi 30 napos minimum (minta)</span><strong>${money(p.low30)}</strong></div>
+            <div class="meter" aria-label="Jelenlegi ár az átlag százalékában"><span style="width:${currentRatio}%"></span></div>
+          </div>
+          <div class="reason">${p.description}</div>
+          <div class="history-line" style="margin-top:13px;margin-bottom:0"><span>Adatfrissítés (minta)</span><strong>${p.updated}</strong></div>
+          <button class="btn" type="button" aria-label="${p.name} magyarázata" data-id="${p.id}">Miért ezt jelzi?</button>`;
+        grid.insertBefore(card, empty);
+        card.querySelector('button').addEventListener('click', () => {
+          alert(`${p.name}\n\nJelenlegi mintaár: ${money(p.price)}\n30 napos mintaátlag: ${money(p.avg30)}\nEltérés: ${d}%\nÁrelőzmény: ${p.days} nap\n\n${good ? 'A demó szabály szerint jó akciójelölt.' : 'A demó szabály szerint nincs elég erős akciójel.'}\n\nEz nem élő kereskedői ajánlat.`);
+        });
+      });
+    }
+    document.getElementById('searchButton').addEventListener('click', render);
+    document.getElementById('search').addEventListener('input', render);
+    document.getElementById('category').addEventListener('change', render);
+    document.getElementById('onlyDeals').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>
